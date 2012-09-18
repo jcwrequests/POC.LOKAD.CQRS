@@ -6,28 +6,62 @@ Imports ProtoBuf
 Imports System.Security.Cryptography
 Imports System.Text
 
+Public Interface IEvent
+
+End Interface
+Public Interface ICommand
+
+End Interface
+
 <ProtoContract()>
 <DataContract()>
 Public NotInheritable Class CreateCustomer
-    <ProtoMember(1)> <DataMember()> Public CustomerName As String
-    <ProtoMember(2)> <DataMember()> Public CustomerID As Integer
+    Implements ICommand
+    <ProtoMember(1)> <DataMember()> Public CustomerID As CustomerId
+    <ProtoMember(2)> <DataMember()> Public CustomerName As String
+
 End Class
 
 <ProtoContract()>
 <DataContract()>
 Public NotInheritable Class CustomerCreated
-    <ProtoMember(1)> <DataMember()> Public CustomerID As Integer
+    Implements IEvent
+    <ProtoMember(1)> <DataMember()> Public CustomerID As CustomerId
     <ProtoMember(2)> <DataMember()> Public CustomerName As String
 End Class
 
 <ProtoContract()>
 <DataContract()>
+Public NotInheritable Class HelpCustomer
+    Implements ICommand
+    <ProtoMember(1)> <DataMember()> Public CustomerID As CustomerId
+End Class
+<ProtoContract()>
+<DataContract()>
+Public NotInheritable Class CustomerHelped
+    Implements IEvent
+    <ProtoMember(1)> <DataMember()> Public CustomerID As CustomerId
+End Class
+
+<ProtoContract()>
+<DataContract()>
 Public NotInheritable Class Customer
-    <ProtoMember(1)> <DataMember()> Public Name As String
-    <ProtoMember(2)> <DataMember()> Public Id As Integer
-    Public Sub New(id As Integer, name As String)
+    <ProtoMember(1)> <DataMember()> Public Id As CustomerId
+    <ProtoMember(2)> <DataMember()> Public Name As String
+    <ProtoMember(3)> <DataMember()> Public TimesHelped As Integer
+
+    Public Sub New(id As CustomerId, name As String)
         Me.Name = name
         Me.Id = id
+        Me.TimesHelped = 0
+    End Sub
+    Public Sub New(id As CustomerId, name As String, TimesHelped As Integer)
+        Me.Name = name
+        Me.Id = id
+        Me.TimesHelped = TimesHelped
+    End Sub
+    Public Sub New()
+
     End Sub
 End Class
 <ProtoContract()>
@@ -61,9 +95,9 @@ Public NotInheritable Class CustomerIndexProjection
     End Function
 
     Public Sub [When](e As CustomerCreated)
-        Dim b = GetKey(e.CustomerID)
+        Dim b = GetKey(e.CustomerID.ToString)
 
-        Me._writer.Add(b, New CustomerIndexLookUp() With {.ID = e.CustomerID})
+        Me._writer.Add(b, New CustomerIndexLookUp() With {.ID = e.CustomerID.Id})
 
     End Sub
 
