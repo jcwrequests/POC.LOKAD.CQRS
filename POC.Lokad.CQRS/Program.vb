@@ -8,26 +8,47 @@ Imports System.Threading
 Module Program
 
     Sub Main()
-        Dim streamer = EnvelopeStreamer.CreateDefault(GetType(CreateCustomer), GetType(CustomerCreated))
+
+        'var observer = new ConsoleObserver();
+        '    SystemObserver.Swap(observer);
+        '    Context.SwapForDebug(s => SystemObserver.Notify(s));
+
+        Dim streamer = EnvelopeStreamer.CreateDefault(GetType(CreateCustomer),
+                                                      GetType(CustomerCreated),
+                                                      GetType(HelpCustomer),
+                                                      GetType(CustomerHelped))
+
+
         Dim builder As New CqrsEngineBuilder(streamer)
 
         Dim account = FileStorage.CreateConfig(New IO.DirectoryInfo("..\..\Store"))
         account.Wipe()
         account.EnsureDirectory()
-
+        Dim tapesContainer = account.CreateTape()
         Dim nuclear = account.CreateNuclear(New TestStrategy)
         Dim inbox = account.CreateInbox("input")
         Dim projectionsInbox = account.CreateInbox("views")
 
-
         Dim sender = account.CreateSimpleSender(streamer, "input")
+        Dim projector = account.CreateSimpleSender(streamer, "views")
 
         Dim handler As New RedirectToCommand
         handler.WireToLambda(Of CreateCustomer)(Sub(customer) consume(customer, nuclear, sender))
+        handler.WireToLambda(Of HelpCustomer)(Sub(customer)
+                                                  Dim c = nuclear.GetEntity(Of Customer)(customer.CustomerID)
+                                                  If c.HasValue Then
+                                                      Dim times = c.Value.TimesHelped + 1
+                                                      Stop
+                                                  End If
+                                                  sender.SendOne(New CustomerHelped() With {.CustomerID = New CustomerId(customer.CustomerID.Id)})
+                                              End Sub)
 
         handler.WireToLambda(Of CustomerCreated)(Sub(m)
                                                      nuclear.AddEntity(m.CustomerID, m)
+                                                     projector.SendOne(m)
                                                  End Sub)
+
+        handler.WireToLambda(Of CustomerHelped)(Sub(m) nuclear.AddEntity(m.CustomerID, m))
 
         builder.Handle(inbox, Sub(envelope)
                                   Using tx As New TransactionScope(TransactionScopeOption.RequiresNew)
@@ -36,8 +57,9 @@ Module Program
                                   End Using
                               End Sub)
 
-        Dim eventQ = account.CreateQueueWriter("projections")
+
         Dim events As New RedirectToDynamicEvent()
+
         Dim docs = nuclear.Container
 
         events.WireToWhen(New CustomerIndexProjection(docs.GetWriter(Of Integer, CustomerIndexLookUp)))
@@ -53,15 +75,20 @@ Module Program
                 Dim task = engine.Start(cts.Token)
 
                 'Test Sending a batch that rollsback commands on failure
-                sender.SendBatch({New CreateCustomer With {.CustomerID = 1, .CustomerName = "Rinat Abdullin"},
-                                  New CreateCustomer With {.CustomerID = 2, .CustomerName = "Jason Wyglendowski"}})
+                sender.SendBatch({New CreateCustomer With {.CustomerID = New CustomerId(1), .CustomerName = "Rinat Abdullin"},
+                                  New CreateCustomer With {.CustomerID = New CustomerId(2), .CustomerName = "Jason Wyglendowski"}})
 
-                'Test Sending a successfull batch
-                sender.SendBatch({New CreateCustomer With {.CustomerID = 1, .CustomerName = "Rinat Abdullin"}})
+                'Test Sending a successfull item
+                sender.SendOne(New CreateCustomer With {.CustomerID = New CustomerId(1),
+                                                        .CustomerName = "Rinat Abdullin"})
+
+                sender.SendOne(New HelpCustomer With {.CustomerID = New CustomerId(1)})
 
                 Console.WriteLine("running")
                 Console.WriteLine("Press enter to stop")
                 Console.ReadLine()
+
+
                 cts.Cancel()
                 If Not task.Wait(5000) Then
                     Console.WriteLine("Terminiating")
@@ -70,6 +97,10 @@ Module Program
             End Using
         End Using
 
+        'Dim fileContainer As New TapeStorage.FileTapeContainer()
+        'Dim fileStream = fileContainer.GetOrCreateStream("test-createcustomer")
+        'Dim records = fileStream.ReadRecords(0, Integer.MaxValue)
+        'Dim fileStream As New TapeStorage.FileTapeStream("..\..\Store\test-createcustomer")
 
 
     End Sub
@@ -78,12 +109,14 @@ Module Program
 
     Public Sub consume(cmd As CreateCustomer, storage As NuclearStorage, sender As SimpleMessageSender)
         Dim tester As New TransactionTester() With {.OnCommit = Sub()
-                                                                    
-                                                                    storage.AddEntity(cmd.CustomerID, cmd)
+                                                                    Dim customer As New Customer(cmd.CustomerID, cmd.CustomerName)
+
+                                                                    storage.AddEntity(cmd.CustomerID, customer)
+
                                                                     sender.SendOne(New CustomerCreated With {.CustomerID = cmd.CustomerID, .CustomerName = cmd.CustomerName})
 
                                                                 End Sub}
-        If cmd.CustomerID.Equals(2) Then Throw New InvalidOperationException("Failed Requested")
+        If cmd.CustomerID.Id.Equals(2) Then Throw New InvalidOperationException("Failed Requested")
 
     End Sub
 End Module
