@@ -17,6 +17,9 @@ End Interface
 <DataContract()>
 Public NotInheritable Class CreateCustomer
     Implements ICommand
+    Public Sub New()
+
+    End Sub
     <ProtoMember(1)> <DataMember()> Public CustomerID As CustomerId
     <ProtoMember(2)> <DataMember()> Public CustomerName As String
 
@@ -26,6 +29,9 @@ End Class
 <DataContract()>
 Public NotInheritable Class CustomerCreated
     Implements IEvent
+    Public Sub New()
+
+    End Sub
     <ProtoMember(1)> <DataMember()> Public CustomerID As CustomerId
     <ProtoMember(2)> <DataMember()> Public CustomerName As String
 End Class
@@ -34,12 +40,18 @@ End Class
 <DataContract()>
 Public NotInheritable Class HelpCustomer
     Implements ICommand
+    Public Sub New()
+
+    End Sub
     <ProtoMember(1)> <DataMember()> Public CustomerID As CustomerId
 End Class
 <ProtoContract()>
 <DataContract()>
 Public NotInheritable Class CustomerHelped
     Implements IEvent
+    Public Sub New()
+
+    End Sub
     <ProtoMember(1)> <DataMember()> Public CustomerID As CustomerId
 End Class
 
@@ -68,7 +80,9 @@ End Class
 <DataContract()>
 Public NotInheritable Class CustomerIndexLookUp
     Private _id As Integer
+    Public Sub New()
 
+    End Sub
     <ProtoMember(1)> <DataMember(Order:=1)>
     Public Property ID As Integer
         Get

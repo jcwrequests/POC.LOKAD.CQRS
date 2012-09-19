@@ -30,13 +30,17 @@ Module Program
         account.Wipe()
         account.EnsureDirectory()
 
-        Dim tapesContainer = account.CreateAppendOnlyStore()
-        Dim nuclear = account.CreateNuclear(New TestStrategy)
+        Dim tapesContainer = account.CreateAppendOnlyStore("sample-store")
+
+
+        Dim nuclear = New NuclearStorage(account.CreateDocumentStore(New TestStrategy))
+
+
         Dim inbox = account.CreateInbox("input")
         Dim projectionsInbox = account.CreateInbox("views")
 
-        Dim sender = account.CreateSimpleSender(streamer, "input")
-        Dim projector = account.CreateSimpleSender(streamer, "views")
+        Dim sender = account.CreateMessageSender(streamer, "input")
+        Dim projector = account.CreateMessageSender(streamer, "views")
 
         Dim handler As New RedirectToCommand
         handler.WireToLambda(Of CreateCustomer)(Sub(customer) consume(customer, nuclear, sender))
@@ -46,19 +50,20 @@ Module Program
                                                       Dim times = c.Value.TimesHelped + 1
                                                       Stop
                                                   End If
-                                                  sender.SendOne(New CustomerHelped() With {.CustomerID = New CustomerId(customer.CustomerID.Id)})
+
+                                                  sender.Send(New CustomerHelped() With {.CustomerID = New CustomerId(customer.CustomerID.Id)})
                                               End Sub)
 
         handler.WireToLambda(Of CustomerCreated)(Sub(m)
                                                      nuclear.AddEntity(m.CustomerID, m)
-                                                     projector.SendOne(m)
+                                                     projector.Send(m)
                                                  End Sub)
 
         handler.WireToLambda(Of CustomerHelped)(Sub(m) nuclear.AddEntity(m.CustomerID, m))
 
         builder.Handle(inbox, Sub(envelope)
                                   Using tx As New TransactionScope(TransactionScopeOption.RequiresNew)
-                                      handler.InvokeMany(envelope.SelectContents)
+                                      handler.Invoke(envelope.Message)
                                       tx.Complete()
                                   End Using
                               End Sub)
@@ -70,25 +75,25 @@ Module Program
 
         events.WireToWhen(New CustomerIndexProjection(docs.GetWriter(Of Integer, CustomerIndexLookUp)))
         builder.Handle(projectionsInbox, Sub(envelope)
-                                             Dim content = envelope.Items(0).Content
+                                             Dim content = envelope.Message
                                              events.InvokeEvent(content)
                                          End Sub)
 
 
 
         Using cts As New CancellationTokenSource()
-            Using engine = builder.Build
+            Using engine = builder.Build(cts.Token)
                 Dim task = engine.Start(cts.Token)
 
                 'Test Sending a batch that rollsback commands on failure
-                sender.SendBatch({New CreateCustomer With {.CustomerID = New CustomerId(1), .CustomerName = "Rinat Abdullin"},
+                sender.Send({New CreateCustomer With {.CustomerID = New CustomerId(1), .CustomerName = "Rinat Abdullin"},
                                   New CreateCustomer With {.CustomerID = New CustomerId(2), .CustomerName = "Jason Wyglendowski"}})
 
                 'Test Sending a successfull item
-                sender.SendOne(New CreateCustomer With {.CustomerID = New CustomerId(1),
+                sender.Send(New CreateCustomer With {.CustomerID = New CustomerId(1),
                                                         .CustomerName = "Rinat Abdullin"})
 
-                sender.SendOne(New HelpCustomer With {.CustomerID = New CustomerId(1)})
+                sender.Send(New HelpCustomer With {.CustomerID = New CustomerId(1)})
 
                 Console.WriteLine("running")
                 Console.WriteLine("Press enter to stop")
@@ -113,13 +118,13 @@ Module Program
 
 
 
-    Public Sub consume(cmd As CreateCustomer, storage As NuclearStorage, sender As SimpleMessageSender)
+    Public Sub consume(cmd As CreateCustomer, storage As NuclearStorage, sender As MessageSender)
         Dim tester As New TransactionTester() With {.OnCommit = Sub()
                                                                     Dim customer As New Customer(cmd.CustomerID, cmd.CustomerName)
 
                                                                     storage.AddEntity(cmd.CustomerID, customer)
 
-                                                                    sender.SendOne(New CustomerCreated With {.CustomerID = cmd.CustomerID, .CustomerName = cmd.CustomerName})
+                                                                    sender.Send(New CustomerCreated With {.CustomerID = cmd.CustomerID, .CustomerName = cmd.CustomerName})
 
                                                                 End Sub}
         If cmd.CustomerID.Id.Equals(2) Then Throw New InvalidOperationException("Failed Requested")
