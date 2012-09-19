@@ -43,7 +43,9 @@ Module Program
         Dim projector = account.CreateMessageSender(streamer, "views")
 
         Dim handler As New RedirectToCommand
-        handler.WireToLambda(Of CreateCustomer)(Sub(customer) consume(customer, nuclear, sender))
+        handler.WireToLambda(Of CreateCustomer)(Sub(customer)
+                                                    consume(customer, nuclear, sender)
+                                                End Sub)
         handler.WireToLambda(Of HelpCustomer)(Sub(customer)
                                                   Dim c = nuclear.GetEntity(Of Customer)(customer.CustomerID)
                                                   If c.HasValue Then
@@ -86,12 +88,13 @@ Module Program
                 Dim task = engine.Start(cts.Token)
 
                 'Test Sending a batch that rollsback commands on failure
-                sender.Send({New CreateCustomer With {.CustomerID = New CustomerId(1), .CustomerName = "Rinat Abdullin"},
-                                  New CreateCustomer With {.CustomerID = New CustomerId(2), .CustomerName = "Jason Wyglendowski"}})
+                'sender.Send(New CreateCustomer(CustomerId:=New CustomerId(1), CustomerName:="Rinat Abdullin"))
+
+                sender.Send(New CreateCustomer(CustomerID:=New CustomerId(2), CustomerName:="Jason Wyglendowski"))
+
 
                 'Test Sending a successfull item
-                sender.Send(New CreateCustomer With {.CustomerID = New CustomerId(1),
-                                                        .CustomerName = "Rinat Abdullin"})
+                sender.Send(New CreateCustomer(CustomerId:=New CustomerId(1), CustomerName:="Rinat Abdullin"))
 
                 sender.Send(New HelpCustomer With {.CustomerID = New CustomerId(1)})
 
@@ -119,15 +122,21 @@ Module Program
 
 
     Public Sub consume(cmd As CreateCustomer, storage As NuclearStorage, sender As MessageSender)
-        Dim tester As New TransactionTester() With {.OnCommit = Sub()
-                                                                    Dim customer As New Customer(cmd.CustomerID, cmd.CustomerName)
+        'Dim tester As New TransactionTester() With {.OnCommit = Sub()
+        '                                                            Dim customer As New Customer(cmd.CustomerID, cmd.CustomerName)
 
-                                                                    storage.AddEntity(cmd.CustomerID, customer)
+        '                                                            storage.AddEntity(cmd.CustomerID, customer)
 
-                                                                    sender.Send(New CustomerCreated With {.CustomerID = cmd.CustomerID, .CustomerName = cmd.CustomerName})
+        '                                                            sender.Send(New CustomerCreated With {.CustomerID = cmd.CustomerID, .CustomerName = cmd.CustomerName})
 
-                                                                End Sub}
-        If cmd.CustomerID.Id.Equals(2) Then Throw New InvalidOperationException("Failed Requested")
+        '                                                        End Sub}
+        'If cmd.CustomerID.Id.Equals(2) Then Throw New InvalidOperationException("Failed Requested")
+
+        Dim customer As New Customer(cmd.CustomerID, cmd.CustomerName)
+
+        storage.AddEntity(cmd.CustomerID, customer)
+
+        sender.Send(New CustomerCreated With {.CustomerID = cmd.CustomerID, .CustomerName = cmd.CustomerName})
 
     End Sub
 End Module

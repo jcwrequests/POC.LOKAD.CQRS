@@ -17,8 +17,10 @@ End Interface
 <DataContract()>
 Public NotInheritable Class CreateCustomer
     Implements ICommand
-    Public Sub New()
 
+    Public Sub New(CustomerID As CustomerId, CustomerName As String)
+        Me.CustomerID = CustomerID
+        Me.CustomerName = CustomerName
     End Sub
     <ProtoMember(1)> <DataMember()> Public CustomerID As CustomerId
     <ProtoMember(2)> <DataMember()> Public CustomerName As String
