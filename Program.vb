@@ -13,10 +13,15 @@ Module Program
         '    SystemObserver.Swap(observer);
         '    Context.SwapForDebug(s => SystemObserver.Notify(s));
 
-        Dim streamer = EnvelopeStreamer.CreateDefault(GetType(CreateCustomer),
-                                                      GetType(CustomerCreated),
-                                                      GetType(HelpCustomer),
-                                                      GetType(CustomerHelped))
+        'Dim streamer = EnvelopeStreamer.CreateDefault(GetType(CreateCustomer),
+        '                                              GetType(CustomerCreated),
+        '                                              GetType(HelpCustomer),
+        '                                              GetType(CustomerHelped))
+
+        Dim streamer As New EnvelopeStreamer(New DataSerialization({GetType(CreateCustomer),
+                                                                    GetType(CustomerCreated),
+                                                                    GetType(HelpCustomer),
+                                                                    GetType(CustomerHelped)}))
 
 
         Dim builder As New CqrsEngineBuilder(streamer)
@@ -24,7 +29,8 @@ Module Program
         Dim account = FileStorage.CreateConfig(New IO.DirectoryInfo("..\..\Store"))
         account.Wipe()
         account.EnsureDirectory()
-        Dim tapesContainer = account.CreateTape()
+
+        Dim tapesContainer = account.CreateAppendOnlyStore()
         Dim nuclear = account.CreateNuclear(New TestStrategy)
         Dim inbox = account.CreateInbox("input")
         Dim projectionsInbox = account.CreateInbox("views")
