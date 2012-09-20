@@ -23,6 +23,7 @@ Public Class DataSerialization
                                  Using writer As New StreamWriter(s)
 
                                      writer.WriteLine()
+
                                      writer.WriteLine(JsvFormatter.Format(JsonSerializer.SerializeToString(o, type)))
                                  End Using
                              End Sub)

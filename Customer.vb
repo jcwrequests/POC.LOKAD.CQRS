@@ -12,7 +12,7 @@ End Interface
 Public Interface ICommand
 
 End Interface
-<Serializable>
+
 <ProtoContract()>
 <DataContract()>
 Public NotInheritable Class CreateCustomer
@@ -22,14 +22,11 @@ Public NotInheritable Class CreateCustomer
         Me.CustomerID = CustomerID
         Me.CustomerName = CustomerName
     End Sub
-    Public Sub New()
-
-    End Sub
     <ProtoMember(1)> <DataMember()> Public CustomerID As CustomerId
     <ProtoMember(2)> <DataMember()> Public CustomerName As String
 
 End Class
-<Serializable>
+
 <ProtoContract()>
 <DataContract()>
 Public NotInheritable Class CustomerCreated
@@ -40,7 +37,7 @@ Public NotInheritable Class CustomerCreated
     <ProtoMember(1)> <DataMember()> Public CustomerID As CustomerId
     <ProtoMember(2)> <DataMember()> Public CustomerName As String
 End Class
-<Serializable>
+
 <ProtoContract()>
 <DataContract()>
 Public NotInheritable Class HelpCustomer
@@ -50,7 +47,6 @@ Public NotInheritable Class HelpCustomer
     End Sub
     <ProtoMember(1)> <DataMember()> Public CustomerID As CustomerId
 End Class
-<Serializable>
 <ProtoContract()>
 <DataContract()>
 Public NotInheritable Class CustomerHelped
@@ -61,7 +57,6 @@ Public NotInheritable Class CustomerHelped
     <ProtoMember(1)> <DataMember()> Public CustomerID As CustomerId
 End Class
 
-<Serializable>
 <ProtoContract()>
 <DataContract()>
 Public NotInheritable Class Customer
@@ -83,7 +78,6 @@ Public NotInheritable Class Customer
 
     End Sub
 End Class
-<Serializable>
 <ProtoContract()>
 <DataContract()>
 Public NotInheritable Class CustomerIndexLookUp
