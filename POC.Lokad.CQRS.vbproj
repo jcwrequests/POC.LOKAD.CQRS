@@ -85,8 +85,10 @@
     <Compile Include="Aggregates\Customer\CustomerApplicationService.vb" />
     <Compile Include="Aggregates\Customer\CustomerId.vb" />
     <Compile Include="Aggregates\Customer\CustomerState.vb" />
+    <Compile Include="ConsoleObserver.vb" />
     <Compile Include="Contracts\Interfaces.vb" />
     <Compile Include="Customer.vb" />
+    <Compile Include="Extensions\CommandExtensions.vb" />
     <Compile Include="Program.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">
@@ -139,6 +141,9 @@
   <ItemGroup>
     <Folder Include="Projections\" />
     <Folder Include="Store\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="ConsoleObserver.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

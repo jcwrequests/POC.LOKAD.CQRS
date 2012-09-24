@@ -22,8 +22,8 @@ Public NotInheritable Class CreateCustomer
         Me.CustomerID = CustomerID
         Me.CustomerName = CustomerName
     End Sub
-    <ProtoMember(1)> <DataMember()> Public CustomerID As CustomerId
-    <ProtoMember(2)> <DataMember()> Public CustomerName As String
+    <ProtoMember(1)> <DataMember()> Public Property CustomerID As CustomerId
+    <ProtoMember(2)> <DataMember()> Public Property CustomerName As String
 
 End Class
 
@@ -34,8 +34,8 @@ Public NotInheritable Class CustomerCreated
     Public Sub New()
 
     End Sub
-    <ProtoMember(1)> <DataMember()> Public CustomerID As CustomerId
-    <ProtoMember(2)> <DataMember()> Public CustomerName As String
+    <ProtoMember(1)> <DataMember()> Public Property CustomerID As CustomerId
+    <ProtoMember(2)> <DataMember()> Public Property CustomerName As String
 End Class
 
 <ProtoContract()>
@@ -45,7 +45,7 @@ Public NotInheritable Class HelpCustomer
     Public Sub New()
 
     End Sub
-    <ProtoMember(1)> <DataMember()> Public CustomerID As CustomerId
+    <ProtoMember(1)> <DataMember()> Public Property CustomerID As CustomerId
 End Class
 <ProtoContract()>
 <DataContract()>
@@ -54,15 +54,15 @@ Public NotInheritable Class CustomerHelped
     Public Sub New()
 
     End Sub
-    <ProtoMember(1)> <DataMember()> Public CustomerID As CustomerId
+    <ProtoMember(1)> <DataMember()> Public Property CustomerID As CustomerId
 End Class
 
 <ProtoContract()>
 <DataContract()>
 Public NotInheritable Class Customer
-    <ProtoMember(1)> <DataMember()> Public Id As CustomerId
-    <ProtoMember(2)> <DataMember()> Public Name As String
-    <ProtoMember(3)> <DataMember()> Public TimesHelped As Integer
+    <ProtoMember(1)> <DataMember()> Public Property Id As CustomerId
+    <ProtoMember(2)> <DataMember()> Public Property Name As String
+    <ProtoMember(3)> <DataMember()> Public Property TimesHelped As Integer
 
     Public Sub New(id As CustomerId, name As String)
         Me.Name = name

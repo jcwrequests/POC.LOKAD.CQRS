@@ -9,9 +9,11 @@ Module Program
 
     Sub Main()
 
-        'var observer = new ConsoleObserver();
-        '    SystemObserver.Swap(observer);
-        '    Context.SwapForDebug(s => SystemObserver.Notify(s));
+        Dim observer As New ConsoleObserver
+
+        SystemObserver.Swap(observer)
+        'Context.SwapForDebug(s >= SystemObserver.Notify(s))
+
 
         'Dim streamer = EnvelopeStreamer.CreateDefault(GetType(CreateCustomer),
         '                                              GetType(CustomerCreated),
@@ -50,7 +52,8 @@ Module Program
                                                   Dim c = nuclear.GetEntity(Of Customer)(customer.CustomerID)
                                                   If c.HasValue Then
                                                       Dim times = c.Value.TimesHelped + 1
-                                                      Stop
+
+
                                                   End If
 
                                                   sender.Send(New CustomerHelped() With {.CustomerID = New CustomerId(customer.CustomerID.Id)})
@@ -64,10 +67,11 @@ Module Program
         handler.WireToLambda(Of CustomerHelped)(Sub(m) nuclear.AddEntity(m.CustomerID, m))
 
         builder.Handle(inbox, Sub(envelope)
-                                  Using tx As New TransactionScope(TransactionScopeOption.RequiresNew)
+                                  Using tx As New TransactionScope(System.Transactions.TransactionScopeOption.RequiresNew)
                                       handler.Invoke(envelope.Message)
                                       tx.Complete()
                                   End Using
+
                               End Sub)
 
 
@@ -88,9 +92,8 @@ Module Program
                 Dim task = engine.Start(cts.Token)
 
                 'Test Sending a batch that rollsback commands on failure
-                'sender.Send(New CreateCustomer(CustomerId:=New CustomerId(1), CustomerName:="Rinat Abdullin"))
-
-                sender.Send(New CreateCustomer(CustomerID:=New CustomerId(2), CustomerName:="Jason Wyglendowski"))
+                sender.SendBatch(True, {New CreateCustomer(CustomerId:=New CustomerId(1), CustomerName:="Rinat Abdullin"),
+                                        New CreateCustomer(CustomerID:=New CustomerId(2), CustomerName:="Jason Wyglendowski")})
 
 
                 'Test Sending a successfull item
@@ -122,21 +125,16 @@ Module Program
 
 
     Public Sub consume(cmd As CreateCustomer, storage As NuclearStorage, sender As MessageSender)
-        'Dim tester As New TransactionTester() With {.OnCommit = Sub()
-        '                                                            Dim customer As New Customer(cmd.CustomerID, cmd.CustomerName)
+        Dim tester As New TransactionTester() With {.OnCommit = Sub()
+                                                                    Dim customer As New Customer(cmd.CustomerID, cmd.CustomerName)
 
-        '                                                            storage.AddEntity(cmd.CustomerID, customer)
+                                                                    storage.AddEntity(cmd.CustomerID, customer)
 
-        '                                                            sender.Send(New CustomerCreated With {.CustomerID = cmd.CustomerID, .CustomerName = cmd.CustomerName})
+                                                                    sender.Send(New CustomerCreated With {.CustomerID = cmd.CustomerID, .CustomerName = cmd.CustomerName})
 
-        '                                                        End Sub}
-        'If cmd.CustomerID.Id.Equals(2) Then Throw New InvalidOperationException("Failed Requested")
+                                                                End Sub}
+        If cmd.CustomerID.Id.Equals(2) Then Throw New InvalidOperationException("Failed Requested")
 
-        Dim customer As New Customer(cmd.CustomerID, cmd.CustomerName)
-
-        storage.AddEntity(cmd.CustomerID, customer)
-
-        sender.Send(New CustomerCreated With {.CustomerID = cmd.CustomerID, .CustomerName = cmd.CustomerName})
-
+       
     End Sub
 End Module
