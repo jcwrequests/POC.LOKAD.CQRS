@@ -89,6 +89,8 @@
     <Compile Include="Contracts\Interfaces.vb" />
     <Compile Include="Customer.vb" />
     <Compile Include="Extensions\CommandExtensions.vb" />
+    <Compile Include="Factory\HandlerFactory.vb" />
+    <Compile Include="Factory\InboxFactory.vb" />
     <Compile Include="Program.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">
@@ -105,6 +107,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <Compile Include="Factory\ServiceEnvironment.vb" />
     <Compile Include="Storage\AppendOnlyStoreConcurrencyException.vb" />
     <Compile Include="Storage\DataWithName.vb" />
     <Compile Include="Storage\DataWithVersion.vb" />
